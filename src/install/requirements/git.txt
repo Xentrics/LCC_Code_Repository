@@ -1,0 +1,2 @@
+# devtools packages to install and load from Git. One per line
+# e.g. git://github.com/hadley/stringr.git

@@ -1,0 +1,10 @@
+# Bioconductor packages to install and load. One per line
+phyloseq
+biomformat
+Maaslin2
+metagenomeSeq
+edgeR
+BiocParallel
+SIAMCAT
+pathview
+
