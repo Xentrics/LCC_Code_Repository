@@ -2,3 +2,4 @@
 src/log/
 results_species_prev30_augmented/
 samples.test.txt
+*.zip
