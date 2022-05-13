@@ -33,7 +33,7 @@ get_train_plan <- function(max_expand = NULL) {
 
   drake::drake_plan(
 
-    #== TRAIN Profiles (only for features) ====
+    #== ABUNDANCE Profiles OF TRAIN SAMPLES (only to subset test features to accommodate variance drift and batch effects) ====
     tFeatures.hu2.strat_full.prev30.train = {
 
       to_remove <- c("UNMAPPED", "UNINTEGRATED", "UNGROUPED", "OTHER", "LOW_PREV")
@@ -52,7 +52,7 @@ get_train_plan <- function(max_expand = NULL) {
     },
     
 
-    #== TEST PROFILES ====
+    #== ABUNDANCE PROFILES OF VALIDATION SAMPLES ====
     # Feature-Space of train & test was the same before prevalance filtering
     # Features are filtered by the ones kept in train
     tData.hu2.strat_full.test = {
@@ -92,7 +92,7 @@ get_train_plan <- function(max_expand = NULL) {
       profs %>% dplyr::select(-Features_Train, -Features_Missing)
     },
 
-
+    # Names of test samples
     tSamples.test = {
       read_rds(file_in("data/meta_data_2021.test.rds")) %>%
         dplyr::rename("Sample" = "PatientID") %>%
@@ -105,8 +105,7 @@ get_train_plan <- function(max_expand = NULL) {
         sort()
     },
 
-    tSamples.test.out = write_lines(tSamples.test, file_out("samples.test.txt")),
-
+    # Meta data of test samples
     tMeta.test = {
       tar <- read_rds(file_in("data/targets.test.rds")) %>%
         dplyr::rename("Sample" = "samples") %>%
@@ -129,15 +128,7 @@ get_train_plan <- function(max_expand = NULL) {
     },
 
 
-    #== Model Training purely using SIAMCAT functionality ====
-    # tFiles.stratified.hu2 = {
-    #   readxl::read_excel(file_in("results_species_prev30_augmented/performance_AUGMENTED_HU2_full_strat_prev30.xls")) %>%
-    #     filter(auROC > 0.75 | auPRC > 0.75) %>%
-    #     select(fname) %>%
-    #     filter(file.exists(fname)) %>%
-    #     mutate(hash = map_chr(fname, ~ digest::digest(.x, file = TRUE)))
-    # },
-
+    #== Select Models for testing ====
     tFiles.strat_full.hu2 = {
 
       perf_meta <- tibble()
@@ -176,7 +167,7 @@ get_train_plan <- function(max_expand = NULL) {
     },
 
 
-    #==== Models using Bacteria-only stratified profiles (without summing up!) ====
+    #==== Load and evaluate models of test data ====
     tTest.strat_full.hu2 = target(
       {
         meta.test = tMeta.test %>%
@@ -190,6 +181,8 @@ get_train_plan <- function(max_expand = NULL) {
           group = NULL # use group from model directly
         )
 
+        file.remove("Rplots.pdf", showWarnings = F)
+        
         tFiles.strat_full.hu2 %>%
           mutate(evals = list(evals)) %>%
           mutate(
@@ -203,8 +196,6 @@ get_train_plan <- function(max_expand = NULL) {
     ),
 
 
-
-
     # gather all test results
     tTest.summary = {
       tTest.strat_full.hu2 %>%
@@ -214,6 +205,7 @@ get_train_plan <- function(max_expand = NULL) {
         relocate(fname, hash, .after = last_col())
     },
 
+    # write out performance
     tTest.summary.out = target(
       {
         df <- tTest.summary %>% dplyr::select(-evals)
@@ -245,11 +237,6 @@ get_train_plan <- function(max_expand = NULL) {
 
 dplan <- get_train_plan()
 
-
-
-options(clustermq.scheduler = "multicore")
-library("clustermq")
-
 cache <- storr::storr_rds(".drake_validate")
 
 drake_config(
@@ -258,10 +245,8 @@ drake_config(
   keep_going = FALSE,
   lock_envir = FALSE,
   lock_cache = TRUE,
-  jobs = getOption("Ncpus", parallel::detectCores(logical = F) / 2),
   format = "qs",
   recover = TRUE,
   recoverable = TRUE
 )
 
-file.remove("Rplots.pdf", showWarnings = FALSE)
