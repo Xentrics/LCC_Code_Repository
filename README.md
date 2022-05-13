@@ -18,7 +18,7 @@
 ## Run
 - start an r-studio server within this repository: **make env**
   - this command will download the docker image & start the container
-  - it will also inform you about the **url** at which the container has been started ([localhost:4444](http://localhost:4444) or [lcc_rserver:4444](http://lcc_rserver:4444))
+  - it will also inform you about the **url** at which the container has been started ([localhost:4444](http://localhost:4444) or your system name like  [ubuntu:4444](http://lcc_rserver:4444))
   	- if the port 4444 is already in use, you need to change it to some other number within the **Makefile**
   - **type the corresponding url into a web-browser**
 - The **credentials** are:
